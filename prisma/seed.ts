@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
 
@@ -74,7 +75,22 @@ async function main() {
     console.log(`  ✔ Product: ${data.name}`);
   }
 
-  console.log("\n✅ Seed complete — 6 categories, 19 products.");
+  // Upsert admin user
+  const passwordHash = await bcrypt.hash("Admin@1234", 12);
+  await db.user.upsert({
+    where: { email: "admin@spas.store" },
+    update: { role: "STORE_ADMIN" },
+    create: {
+      name: "Store Admin",
+      email: "admin@spas.store",
+      passwordHash,
+      role: "STORE_ADMIN",
+      loyaltyPoints: { create: { balance: 0, lifetime: 0 } },
+    },
+  });
+  console.log("  ✔ Admin user: admin@spas.store");
+
+  console.log("\n✅ Seed complete — 6 categories, 19 products, 1 admin.");
 }
 
 main()
