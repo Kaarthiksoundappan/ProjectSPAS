@@ -2,18 +2,50 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Heart } from "lucide-react";
-import { ProductWithCategory } from "@/types";
+import { ShoppingCart, Heart, Check } from "lucide-react";
+import { useState } from "react";
+import { useCart } from "@/lib/store/cart";
+import { parseImages } from "@/lib/utils";
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  comparePrice: number | null;
+  images: string | string[];
+  stock: number;
+  unit: string;
+  category: { name: string };
+}
 
 interface ProductCardProps {
-  product: ProductWithCategory;
+  product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+
+  const images = parseImages(product.images);
   const discount =
     product.comparePrice && product.comparePrice > product.price
       ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
       : null;
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0] ?? "",
+      unit: product.unit,
+      stock: product.stock,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   return (
     <div className="card group relative flex flex-col overflow-hidden transition hover:shadow-md">
@@ -40,18 +72,16 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Image */}
       <Link href={`/products/${product.slug}`} className="relative block aspect-square overflow-hidden bg-gray-100">
-        {product.images[0] ? (
+        {images[0] ? (
           <Image
-            src={product.images[0]}
+            src={images[0]}
             alt={product.name}
             fill
             className="object-cover transition duration-300 group-hover:scale-105"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-5xl text-gray-300">
-            🛒
-          </div>
+          <div className="flex h-full items-center justify-center text-5xl text-gray-300">🛒</div>
         )}
       </Link>
 
@@ -63,28 +93,32 @@ export function ProductCard({ product }: ProductCardProps) {
         >
           {product.name}
         </Link>
-
         <span className="text-xs text-gray-400">{product.category.name}</span>
 
         <div className="mt-auto flex items-center justify-between">
           <div className="flex items-baseline gap-1.5">
             <span className="text-base font-bold text-gray-900">
-              ${Number(product.price).toFixed(2)}
+              ₹{Number(product.price).toFixed(2)}
             </span>
             {product.comparePrice && (
               <span className="text-xs text-gray-400 line-through">
-                ${Number(product.comparePrice).toFixed(2)}
+                ₹{Number(product.comparePrice).toFixed(2)}
               </span>
             )}
             <span className="text-xs text-gray-400">/ {product.unit}</span>
           </div>
 
           <button
+            onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className="btn-primary p-2 disabled:opacity-40"
+            className={`p-2 rounded-lg text-white transition ${
+              added
+                ? "bg-brand-green-500"
+                : "bg-brand-green-600 hover:bg-brand-green-700"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
             aria-label="Add to cart"
           >
-            <ShoppingCart className="h-4 w-4" />
+            {added ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
           </button>
         </div>
       </div>
