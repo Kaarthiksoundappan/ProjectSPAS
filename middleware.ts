@@ -14,7 +14,13 @@ export default withAuth(
     }
 
     // Staff-only admin routes — require STORE_ADMIN only
-    const storeAdminOnlyPaths = ["/admin/staff", "/admin/customers", "/admin/promotions"];
+    const storeAdminOnlyPaths = [
+      "/admin/staff",
+      "/admin/customers",
+      "/admin/promotions",
+      "/admin/products/new",
+      "/admin/products/",   // covers /admin/products/[id]/edit
+    ];
     if (storeAdminOnlyPaths.some((p) => pathname.startsWith(p))) {
       if (token?.role !== "STORE_ADMIN") {
         return NextResponse.redirect(new URL("/admin", req.url));
