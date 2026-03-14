@@ -67,7 +67,7 @@ async function main() {
       update: {},
       create: {
         ...data,
-        images: "[]",
+        images: [],
         categoryId: category.id,
       },
     });

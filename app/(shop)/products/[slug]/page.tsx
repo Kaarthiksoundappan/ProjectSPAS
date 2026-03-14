@@ -37,7 +37,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const product = await getProduct(params.slug);
   if (!product) notFound();
 
-  const images = parseImages(product.images as string);
+  const images = parseImages(product.images);
   const price = Number(product.price);
   const comparePrice = product.comparePrice ? Number(product.comparePrice) : null;
   const discount = comparePrice
