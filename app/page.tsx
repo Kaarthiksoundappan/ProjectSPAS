@@ -53,7 +53,7 @@ export default function HomePage() {
               <Link href="/products" className="btn-primary bg-white text-brand-green-700 hover:bg-brand-green-50">
                 Shop Now
               </Link>
-              <Link href="/register" className="btn-secondary border-white text-white hover:bg-brand-green-600">
+              <Link href="/register" className="btn-secondary border-white text-white bg-transparent hover:bg-white hover:text-brand-green-700">
                 Join & Earn Points
               </Link>
             </div>
