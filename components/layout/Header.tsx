@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ShoppingCart, User, Menu, X, Store } from "lucide-react";
+import { User, Menu, X, Store } from "lucide-react";
 import { useState } from "react";
+import { CartButton } from "@/components/layout/CartButton";
 
 const NAV_LINKS = [
   { href: "/products", label: "Shop" },
@@ -42,12 +43,7 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             {/* Cart */}
-            <Link
-              href="/cart"
-              className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-brand-green-700"
-            >
-              <ShoppingCart className="h-5 w-5" />
-            </Link>
+            <CartButton />
 
             {/* Auth */}
             {session ? (
