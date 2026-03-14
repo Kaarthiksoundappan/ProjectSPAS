@@ -109,13 +109,13 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     </span>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
-                    ${Number(order.total).toFixed(2)}
+                    ₹{Number(order.total).toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[order.status]}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[order.status as OrderStatus] ?? "bg-gray-100 text-gray-600"}`}>
                       {order.status}
                     </span>
                   </td>
