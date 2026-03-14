@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { ShoppingCart, Heart, Star, ChevronRight } from "lucide-react";
+import { Heart, Star, ChevronRight } from "lucide-react";
+import { parseImages } from "@/lib/utils";
+import { AddToCartButton } from "@/components/products/AddToCartButton";
 
 interface Props {
   params: { slug: string };
@@ -35,9 +37,12 @@ export default async function ProductDetailPage({ params }: Props) {
   const product = await getProduct(params.slug);
   if (!product) notFound();
 
+  const images = parseImages(product.images as string);
   const price = Number(product.price);
   const comparePrice = product.comparePrice ? Number(product.comparePrice) : null;
-  const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
+  const discount = comparePrice
+    ? Math.round(((comparePrice - price) / comparePrice) * 100)
+    : null;
   const avgRating =
     product.reviews.length > 0
       ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
@@ -59,11 +64,11 @@ export default async function ProductDetailPage({ params }: Props) {
       </nav>
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        {/* Images */}
+        {/* Image */}
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
-          {product.images[0] ? (
+          {images[0] ? (
             <Image
-              src={product.images[0]}
+              src={images[0]}
               alt={product.name}
               fill
               className="object-cover"
@@ -91,7 +96,6 @@ export default async function ProductDetailPage({ params }: Props) {
             </Link>
             <h1 className="mt-1 text-3xl font-bold text-gray-900">{product.name}</h1>
 
-            {/* Rating */}
             {avgRating && (
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex items-center gap-0.5">
@@ -111,9 +115,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
-            <span className="text-4xl font-bold text-gray-900">${price.toFixed(2)}</span>
+            <span className="text-4xl font-bold text-gray-900">₹{price.toFixed(2)}</span>
             {comparePrice && (
-              <span className="text-xl text-gray-400 line-through">${comparePrice.toFixed(2)}</span>
+              <span className="text-xl text-gray-400 line-through">₹{comparePrice.toFixed(2)}</span>
             )}
             <span className="text-sm text-gray-400">/ {product.unit}</span>
           </div>
@@ -122,27 +126,25 @@ export default async function ProductDetailPage({ params }: Props) {
           {product.stock === 0 ? (
             <span className="badge-red w-fit text-sm px-3 py-1">Out of stock</span>
           ) : product.stock <= 5 ? (
-            <span className="badge-yellow w-fit text-sm px-3 py-1">
-              Only {product.stock} left in stock
-            </span>
+            <span className="badge-yellow w-fit text-sm px-3 py-1">Only {product.stock} left</span>
           ) : (
             <span className="badge-green w-fit text-sm px-3 py-1">In stock</span>
           )}
 
-          {/* Description */}
           {product.description && (
             <p className="text-gray-600 leading-relaxed">{product.description}</p>
           )}
 
           {/* Actions */}
           <div className="flex gap-3 mt-2">
-            <button
-              disabled={product.stock === 0}
-              className="btn-primary flex-1 gap-2 py-3 text-base disabled:opacity-40"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              Add to Cart
-            </button>
+            <AddToCartButton
+              productId={product.id}
+              name={product.name}
+              price={price}
+              image={images[0] ?? ""}
+              unit={product.unit}
+              stock={product.stock}
+            />
             <button className="btn-secondary p-3" aria-label="Add to wishlist">
               <Heart className="h-5 w-5" />
             </button>
@@ -150,7 +152,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
           {/* Loyalty hint */}
           <p className="text-sm text-brand-green-700 bg-brand-green-50 rounded-lg px-4 py-3">
-            Earn <strong>{Math.floor(price * 10)} loyalty points</strong> with this purchase
+            Earn <strong>{Math.floor(price)} loyalty points</strong> with this purchase
           </p>
         </div>
       </div>
