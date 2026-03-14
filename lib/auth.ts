@@ -1,10 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { Role } from "@prisma/client";
+import { Role } from "@/types/enums";
 
 declare module "next-auth" {
   interface Session {

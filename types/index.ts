@@ -1,4 +1,4 @@
-import { Role, OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
+import { Role, OrderStatus, PaymentMethod, PaymentStatus } from "@/types/enums";
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus } from "@/types/enums";
 import { ShoppingBag } from "lucide-react";
 
 interface SearchParams {
