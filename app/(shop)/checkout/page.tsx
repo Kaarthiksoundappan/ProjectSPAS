@@ -1,22 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Banknote, Smartphone, CheckCircle2, Loader2 } from "lucide-react";
+import { Banknote, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
 
-type PaymentMethod = "CARD" | "GOOGLE_PAY" | "CASH";
+type PaymentMethod = "RAZORPAY" | "CASH";
 
-const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: React.ReactNode; desc: string }[] = [
+const PAYMENT_OPTIONS: {
+  id: PaymentMethod;
+  label: string;
+  icon: React.ReactNode;
+  desc: string;
+}[] = [
   {
-    id: "GOOGLE_PAY",
-    label: "Google Pay",
-    icon: <Smartphone className="h-5 w-5" />,
-    desc: "Pay instantly with Google Pay",
-  },
-  {
-    id: "CARD",
-    label: "Credit / Debit Card",
+    id: "RAZORPAY",
+    label: "Pay Online",
     icon: <CreditCard className="h-5 w-5" />,
-    desc: "Visa, Mastercard, Amex",
+    desc: "UPI · Google Pay · Cards · Net Banking · Wallets",
   },
   {
     id: "CASH",
@@ -26,25 +25,115 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: React.ReactNode
   },
 ];
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (document.getElementById("razorpay-script")) return resolve(true);
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function CheckoutPage() {
-  const [payment, setPayment] = useState<PaymentMethod>("GOOGLE_PAY");
+  const [payment, setPayment] = useState<PaymentMethod>("RAZORPAY");
   const [redeemPoints, setRedeemPoints] = useState(false);
   const [loading, setLoading] = useState(false);
   const [placed, setPlaced] = useState(false);
 
-  // Demo values — will be wired to cart state
+  // Demo values — will be wired to cart store
   const subtotal = 0;
   const pointsBalance = 0;
-  const pointsDiscount = redeemPoints ? Math.min(pointsBalance * 0.01, subtotal * 0.2) : 0;
+  const pointsDiscount = redeemPoints
+    ? Math.min(pointsBalance * 0.25, subtotal * 0.2)
+    : 0;
   const total = Math.max(0, subtotal - pointsDiscount);
+
+  async function handleRazorpayPayment() {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      alert("Failed to load payment gateway. Please check your connection.");
+      return;
+    }
+
+    // 1. Create a Razorpay order on the backend
+    const res = await fetch("/api/razorpay/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: total }),
+    });
+
+    if (!res.ok) {
+      alert("Could not initiate payment. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    const { orderId, amount, currency } = await res.json();
+
+    // 2. Open Razorpay checkout modal
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      amount,
+      currency,
+      name: "SPAS Super Store",
+      description: "Order Payment",
+      order_id: orderId,
+      handler: async (response: {
+        razorpay_order_id: string;
+        razorpay_payment_id: string;
+        razorpay_signature: string;
+      }) => {
+        // 3. Verify payment signature
+        const verifyRes = await fetch("/api/razorpay/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          }),
+        });
+
+        if (verifyRes.ok) {
+          setPlaced(true);
+        } else {
+          alert("Payment verification failed. Please contact support.");
+        }
+        setLoading(false);
+      },
+      prefill: {},
+      theme: { color: "#16a34a" },
+      modal: {
+        ondismiss: () => setLoading(false),
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  }
 
   async function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // TODO: call /api/orders POST
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setPlaced(true);
+
+    if (payment === "RAZORPAY") {
+      await handleRazorpayPayment();
+    } else {
+      // Cash on pickup — create order directly
+      await new Promise((r) => setTimeout(r, 1000));
+      setLoading(false);
+      setPlaced(true);
+    }
   }
 
   if (placed) {
@@ -54,7 +143,8 @@ export default function CheckoutPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Order Placed!</h1>
           <p className="mt-2 text-gray-500">
-            Thank you for shopping at SPAS Super Store. You&apos;ll receive a confirmation shortly.
+            Thank you for shopping at SPAS Super Store. You&apos;ll receive a
+            confirmation shortly.
           </p>
         </div>
         <a href="/account/orders" className="btn-primary">
@@ -68,7 +158,10 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="mb-8 text-2xl font-bold text-gray-900">Checkout</h1>
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+      <form
+        onSubmit={handlePlaceOrder}
+        className="grid grid-cols-1 gap-8 lg:grid-cols-5"
+      >
         {/* Left: Payment */}
         <div className="lg:col-span-3 space-y-6">
           {/* Payment method */}
@@ -92,7 +185,11 @@ export default function CheckoutPage() {
                     onChange={() => setPayment(opt.id)}
                     className="sr-only"
                   />
-                  <span className={payment === opt.id ? "text-brand-green-600" : "text-gray-400"}>
+                  <span
+                    className={
+                      payment === opt.id ? "text-brand-green-600" : "text-gray-400"
+                    }
+                  >
                     {opt.icon}
                   </span>
                   <div>
@@ -105,26 +202,6 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
-
-            {/* Card fields */}
-            {payment === "CARD" && (
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">Card number</label>
-                  <input type="text" className="input" placeholder="1234 5678 9012 3456" maxLength={19} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Expiry</label>
-                    <input type="text" className="input" placeholder="MM / YY" maxLength={7} />
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">CVV</label>
-                    <input type="text" className="input" placeholder="•••" maxLength={4} />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Loyalty points */}
@@ -134,7 +211,8 @@ export default function CheckoutPage() {
                 <div>
                   <p className="font-medium text-gray-900">Loyalty Points</p>
                   <p className="text-sm text-gray-500">
-                    You have <strong>{pointsBalance} points</strong> (worth ${(pointsBalance * 0.01).toFixed(2)})
+                    You have <strong>{pointsBalance} points</strong> (worth ₹
+                    {(pointsBalance * 0.25).toFixed(2)})
                   </p>
                 </div>
                 <label className="relative inline-flex cursor-pointer items-center">
@@ -158,17 +236,17 @@ export default function CheckoutPage() {
             <h2 className="font-semibold text-gray-900">Order Summary</h2>
             <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
             {pointsDiscount > 0 && (
               <div className="flex justify-between text-sm text-brand-green-600">
                 <span>Points discount</span>
-                <span>-${pointsDiscount.toFixed(2)}</span>
+                <span>-₹{pointsDiscount.toFixed(2)}</span>
               </div>
             )}
             <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-gray-900 text-lg">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>₹{total.toFixed(2)}</span>
             </div>
 
             <button
@@ -177,7 +255,12 @@ export default function CheckoutPage() {
               className="btn-primary w-full py-3 text-base mt-2 disabled:opacity-50"
             >
               {loading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Placing order...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {payment === "RAZORPAY" ? "Opening payment..." : "Placing order..."}
+                </>
+              ) : payment === "RAZORPAY" ? (
+                "Pay Now"
               ) : (
                 "Place Order"
               )}
