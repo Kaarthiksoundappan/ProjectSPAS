@@ -39,8 +39,9 @@ async function getOrders(statusFilter?: string) {
   });
 }
 
-export default async function AdminOrdersPage({ searchParams }: { searchParams: SearchParams }) {
-  const orders = await getOrders(searchParams.status);
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
+  const orders = await getOrders(params.status);
 
   return (
     <div className="p-6 space-y-6">
@@ -57,7 +58,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
             key={tab.value}
             href={tab.value === "ALL" ? "/admin/orders" : `/admin/orders?status=${tab.value}`}
             className={`rounded-full border px-3 py-1 text-sm transition ${
-              (searchParams.status ?? "ALL") === tab.value
+              (params.status ?? "ALL") === tab.value
                 ? "border-brand-green-500 bg-brand-green-50 text-brand-green-700 font-medium"
                 : "border-gray-200 text-gray-600 hover:border-gray-300"
             }`}

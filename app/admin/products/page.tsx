@@ -27,9 +27,10 @@ async function getProducts(searchParams: SearchParams) {
   });
 }
 
-export default async function AdminProductsPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function AdminProductsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
   const [products, categories] = await Promise.all([
-    getProducts(searchParams),
+    getProducts(params),
     db.category.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
 
@@ -51,7 +52,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <a
           href="/admin/products"
           className={`rounded-full border px-3 py-1 text-sm transition ${
-            !searchParams.filter && !searchParams.category
+            !params.filter && !params.category
               ? "border-brand-green-500 bg-brand-green-50 text-brand-green-700 font-medium"
               : "border-gray-200 text-gray-600 hover:border-gray-300"
           }`}
@@ -61,7 +62,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <a
           href="/admin/products?filter=low-stock"
           className={`rounded-full border px-3 py-1 text-sm transition ${
-            searchParams.filter === "low-stock"
+            params.filter === "low-stock"
               ? "border-yellow-500 bg-yellow-50 text-yellow-700 font-medium"
               : "border-gray-200 text-gray-600 hover:border-gray-300"
           }`}
@@ -73,7 +74,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             key={cat.id}
             href={`/admin/products?category=${cat.slug}`}
             className={`rounded-full border px-3 py-1 text-sm transition ${
-              searchParams.category === cat.slug
+              params.category === cat.slug
                 ? "border-brand-green-500 bg-brand-green-50 text-brand-green-700 font-medium"
                 : "border-gray-200 text-gray-600 hover:border-gray-300"
             }`}
@@ -114,7 +115,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                   </td>
                   <td className="px-4 py-3 text-gray-500">{product.category.name}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    ${Number(product.price).toFixed(2)}
+                    ₹{Number(product.price).toFixed(2)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`flex items-center gap-1 text-sm ${

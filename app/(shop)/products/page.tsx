@@ -39,10 +39,11 @@ async function getCategories() {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
+  const params = await searchParams;
   const [products, categories] = await Promise.all([
-    getProducts(searchParams),
+    getProducts(params),
     getCategories(),
   ]);
 
@@ -65,7 +66,7 @@ export default async function ProductsPage({
                   <a
                     href="/products"
                     className={`block rounded-lg px-3 py-2 text-sm transition hover:bg-brand-green-50 hover:text-brand-green-700 ${
-                      !searchParams.category ? "bg-brand-green-50 font-medium text-brand-green-700" : "text-gray-600"
+                      !params.category ? "bg-brand-green-50 font-medium text-brand-green-700" : "text-gray-600"
                     }`}
                   >
                     All Products
@@ -76,7 +77,7 @@ export default async function ProductsPage({
                     <a
                       href={`/products?category=${cat.slug}`}
                       className={`block rounded-lg px-3 py-2 text-sm transition hover:bg-brand-green-50 hover:text-brand-green-700 ${
-                        searchParams.category === cat.slug
+                        params.category === cat.slug
                           ? "bg-brand-green-50 font-medium text-brand-green-700"
                           : "text-gray-600"
                       }`}
@@ -95,14 +96,14 @@ export default async function ProductsPage({
           {/* Search bar */}
           <div className="mb-6 flex items-center gap-3">
             <form className="relative flex-1" method="get" action="/products">
-              {searchParams.category && (
-                <input type="hidden" name="category" value={searchParams.category} />
+              {params.category && (
+                <input type="hidden" name="category" value={params.category} />
               )}
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="search"
                 name="q"
-                defaultValue={searchParams.q}
+                defaultValue={params.q}
                 placeholder="Search products..."
                 className="input pl-9"
               />
@@ -112,8 +113,8 @@ export default async function ProductsPage({
           {/* Header */}
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900">
-              {searchParams.category
-                ? categories.find((c) => c.slug === searchParams.category)?.name ?? "Products"
+              {params.category
+                ? categories.find((c) => c.slug === params.category)?.name ?? "Products"
                 : "All Products"}
             </h1>
             <span className="text-sm text-gray-500">{products.length} products</span>
